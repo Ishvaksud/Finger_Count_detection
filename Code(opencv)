@@ -1,0 +1,104 @@
+import cv2 as cv
+import numpy as np
+import math
+
+#Function to count the fingers using cosine formula
+
+def count_fingers(cm):
+    hull=cv.convexHull(cm,returnPoints=False)
+    if len(hull) > 3:
+        defects = cv.convexityDefects(cm, hull)
+        if type(defects) != type(None):  
+            cnt=0
+            for i in range(defects.shape[0]):
+                s,e,f,d = defects[i,0]
+                start = tuple(cm[s][0])
+                end = tuple(cm[e][0])
+                far = tuple(cm[f][0])
+                a = math.sqrt((end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2)
+                b = math.sqrt((far[0] - start[0]) ** 2 + (far[1] - start[1]) ** 2)
+                c = math.sqrt((end[0] - far[0]) ** 2 + (end[1] - far[1]) ** 2)
+                angle = math.acos((b ** 2 + c ** 2 - a ** 2) / (2 * b * c))  
+                if angle <= math.pi / 2:  
+                    cnt += 1
+                    cv.circle(roi, far, 8, [211, 84, 0], -1) 
+            return cnt
+        
+        
+#Function to display count 
+
+def display_count(cnt):
+    if cnt==0:
+        cv.putText(frame,"1",(700,200),cv.FONT_HERSHEY_DUPLEX,3.0,(100,120,225),3)
+        
+    elif cnt==1:
+        cv.putText(frame,"2",(700,200),cv.FONT_HERSHEY_DUPLEX,3.0,(100,120,225),3)
+    elif cnt==2:
+    
+        cv.putText(frame,"3",(700,200),cv.FONT_HERSHEY_DUPLEX,3.0,(100,120,225),3)
+    elif cnt==3:
+    
+        cv.putText(frame,"4",(700,200),cv.FONT_HERSHEY_DUPLEX,3.0,(100,120,225),3)
+    else:
+        cv.putText(frame,"5",(700,200),cv.FONT_HERSHEY_DUPLEX,3.0,(100,120,225),3)
+ 
+ 
+ 
+ video=cv.VideoCapture(0)
+while True:
+    ret,frame=video.read()
+    
+    frame=cv.flip(frame,1)
+    
+    put_hand=cv.rectangle(frame,(100,100),(450,450),(0,0,255),2)
+    
+    roi=frame[100:450,100:450]
+    
+    blur=cv.GaussianBlur(roi,(7,7),0)
+    
+    gray=cv.cvtColor(blur,cv.COLOR_BGR2GRAY)
+    
+    kernel = np.ones((5,5),np.uint8)
+    
+    opening = cv.morphologyEx(gray, cv.MORPH_OPEN, kernel)
+    
+    _,thresh=cv.threshold(opening,127,255,cv.THRESH_BINARY_INV)
+    
+    contours,hei=cv.findContours(thresh,cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
+    
+    area_list=[]
+    
+    for i in range(len(contours)):
+        area=cv.contourArea(contours[i])
+        area_list.append((area,i))
+    max_area=max(area_list)
+    
+    contour_value=max_area[1]
+    
+    cm=contours[contour_value]
+    
+    cv.drawContours(roi,[cm],-1,(0,255,0), 3)
+    
+    hull=cv.convexHull(cm)
+    
+    cv.drawContours(roi, [hull],-1,(0,255,0), 3)
+    
+    
+    values=count_fingers(cm)
+    
+    display_count(values)
+    
+    cv.imshow("mask",thresh)
+    
+    cv.imshow("frame",frame)
+    
+    if cv.waitKey(10) & 0xFF == ord("q"):
+         break
+
+cv.destroyAllWindows()
+
+cv.waitKey(1)
+
+video.release()
+
+ 
