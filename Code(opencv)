@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 import math
 
-#Function to count the fingers using cosine formula
+#Function to count the fingers using cosine theorem
 
 def count_fingers(cm):
     hull=cv.convexHull(cm,returnPoints=False)
